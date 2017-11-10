@@ -18,6 +18,7 @@
  */
 
 namespace Handlebars\Loader;
+
 use Handlebars\Loader;
 use Handlebars\StringWrapper;
 
@@ -33,7 +34,6 @@ use Handlebars\StringWrapper;
  * @version   Release: @package_version@
  * @link      http://xamin.ir *
  */
-
 class StringLoader implements Loader
 {
 

@@ -1,9 +1,12 @@
 <?php
+
 /**
  * Created by PhpStorm.
  * User: tomhanstead
  */
-    interface controllerInterface{
-        function index();
-    }
+interface controllerInterface
+{
+    function index();
+}
+
 ?>

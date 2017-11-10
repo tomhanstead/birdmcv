@@ -68,7 +68,7 @@ class InlineLoader implements Loader
      * file, it would be necessary to manually specify the filename and offset.
      *
      * @param string $fileName The file to parse for inline templates
-     * @param int    $offset   A string offset for the start of the templates.
+     * @param int $offset A string offset for the start of the templates.
      *                         This usually coincides with the `__halt_compiler`
      *                         call, and the `__COMPILER_HALT_OFFSET__`.
      */

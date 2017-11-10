@@ -18,6 +18,7 @@
  */
 
 namespace Handlebars\Cache;
+
 use Handlebars\Cache;
 
 /**
@@ -31,7 +32,6 @@ use Handlebars\Cache;
  * @version   Release: @package_version@
  * @link      http://xamin.ir
  */
-
 class Dummy implements Cache
 {
     private $_cache = array();
@@ -54,9 +54,9 @@ class Dummy implements Cache
     /**
      * Set a cache
      *
-     * @param string $name  cache id
-     * @param mixed  $value data to store
-     * @param int    $ttl   time to live in seconds
+     * @param string $name cache id
+     * @param mixed $value data to store
+     * @param int $ttl time to live in seconds
      *
      * $ttl is ignored since the cache is implemented
      * by an array and lives only inside one request

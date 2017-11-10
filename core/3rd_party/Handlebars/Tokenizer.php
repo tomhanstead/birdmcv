@@ -63,6 +63,22 @@ class Tokenizer
     const T_TRIM = "~";
 
     // Valid token types
+    const TYPE = 'type';
+
+    // Interpolated tags
+    const NAME = 'name';
+
+    // Token properties
+    const OTAG = 'otag';
+    const CTAG = 'ctag';
+    const INDEX = 'index';
+    const END = 'end';
+    const INDENT = 'indent';
+    const NODES = 'nodes';
+    const VALUE = 'value';
+    const ARGS = 'args';
+    const TRIM_LEFT = 'tleft';
+    const TRIM_RIGHT = 'tright';
     private static $_tagTypes = array(
         self::T_SECTION => true,
         self::T_INVERTED => true,
@@ -75,28 +91,11 @@ class Tokenizer
         self::T_UNESCAPED => true,
         self::T_UNESCAPED_2 => true,
     );
-
-    // Interpolated tags
     private static $_interpolatedTags = array(
         self::T_ESCAPED => true,
         self::T_UNESCAPED => true,
         self::T_UNESCAPED_2 => true,
     );
-
-    // Token properties
-    const TYPE = 'type';
-    const NAME = 'name';
-    const OTAG = 'otag';
-    const CTAG = 'ctag';
-    const INDEX = 'index';
-    const END = 'end';
-    const INDENT = 'indent';
-    const NODES = 'nodes';
-    const VALUE = 'value';
-    const ARGS = 'args';
-    const TRIM_LEFT = 'tleft';
-    const TRIM_RIGHT = 'tright';
-
     protected $state;
     protected $tagType;
     protected $tag;
@@ -148,110 +147,110 @@ class Tokenizer
             }
 
             switch ($this->state) {
-            case self::IN_TEXT:
-                // Handlebars.js does not think that openning curly brace in
-                // "\\\{{data}}" template is escaped. Instead it removes one
-                // slash and leaves others "as is". To emulate similar behavior
-                // we have to check the last character in the buffer. If it's a
-                // slash we actually does not need to escape openning curly
-                // brace.
-                $prev_slash = substr($this->buffer, -1) == '\\';
+                case self::IN_TEXT:
+                    // Handlebars.js does not think that openning curly brace in
+                    // "\\\{{data}}" template is escaped. Instead it removes one
+                    // slash and leaves others "as is". To emulate similar behavior
+                    // we have to check the last character in the buffer. If it's a
+                    // slash we actually does not need to escape openning curly
+                    // brace.
+                    $prev_slash = substr($this->buffer, -1) == '\\';
 
-                if ($this->tagChange($this->otag. self::T_TRIM, $text, $i) and (!$this->escaped || $prev_slash)) {
-                    $this->flushBuffer();
-                    $this->state = self::IN_TAG_TYPE;
-                    $this->trimLeft = true;
-                } elseif ($this->tagChange(self::T_UNESCAPED.$this->otag, $text, $i) and $this->escaped) {
-                    $this->buffer .= "{{{";
-                    $i += 2;
-                    continue;
-                } elseif ($this->tagChange($this->otag, $text, $i) and (!$this->escaped || $prev_slash)) {
-                    $i--;
-                    $this->flushBuffer();
-                    $this->state = self::IN_TAG_TYPE;
-                } elseif ($this->escaped and $this->escaping) {
-                    // We should not add extra slash before opening tag because
-                    // doubled slash where should be transformed to single one
-                    if (($i + 1) < $len && !$this->tagChange($this->otag, $text, $i + 1)) {
-                        $this->buffer .= "\\";
-                    }
-                } elseif (!$this->escaping) {
-                    if ($text[$i] == "\n") {
-                        $this->filterLine();
-                    } else {
-                        $this->buffer .= $text[$i];
-                    }
-                }
-                break;
-
-            case self::IN_TAG_TYPE:
-
-                $i += strlen($this->otag) - 1;
-                if (isset(self::$_tagTypes[$text[$i + 1]])) {
-                    $tag = $text[$i + 1];
-                    $this->tagType = $tag;
-                } else {
-                    $tag = null;
-                    $this->tagType = self::T_ESCAPED;
-                }
-
-                if ($this->tagType === self::T_DELIM_CHANGE) {
-                    $i = $this->changeDelimiters($text, $i);
-                    $this->state = self::IN_TEXT;
-                } else {
-                    if ($tag !== null) {
-                        $i++;
-                    }
-                    $this->state = self::IN_TAG;
-                }
-                $this->seenTag = $i;
-                break;
-
-            default:
-                if ($this->tagChange(self::T_TRIM . $this->ctag, $text, $i)) {
-                    $this->trimRight = true;
-                    continue;
-                }
-                if ($this->tagChange($this->ctag, $text, $i)) {
-                    // Sections (Helpers) can accept parameters
-                    // Same thing for Partials (little known fact)
-                    if (($this->tagType == self::T_SECTION)
-                        || ($this->tagType == self::T_PARTIAL)
-                        || ($this->tagType == self::T_PARTIAL_2)
-                    ) {
-                        $newBuffer = explode(' ', trim($this->buffer), 2);
-                        $args = '';
-                        if (count($newBuffer) == 2) {
-                            $args = $newBuffer[1];
+                    if ($this->tagChange($this->otag . self::T_TRIM, $text, $i) and (!$this->escaped || $prev_slash)) {
+                        $this->flushBuffer();
+                        $this->state = self::IN_TAG_TYPE;
+                        $this->trimLeft = true;
+                    } elseif ($this->tagChange(self::T_UNESCAPED . $this->otag, $text, $i) and $this->escaped) {
+                        $this->buffer .= "{{{";
+                        $i += 2;
+                        continue;
+                    } elseif ($this->tagChange($this->otag, $text, $i) and (!$this->escaped || $prev_slash)) {
+                        $i--;
+                        $this->flushBuffer();
+                        $this->state = self::IN_TAG_TYPE;
+                    } elseif ($this->escaped and $this->escaping) {
+                        // We should not add extra slash before opening tag because
+                        // doubled slash where should be transformed to single one
+                        if (($i + 1) < $len && !$this->tagChange($this->otag, $text, $i + 1)) {
+                            $this->buffer .= "\\";
                         }
-                        $this->buffer = $newBuffer[0];
+                    } elseif (!$this->escaping) {
+                        if ($text[$i] == "\n") {
+                            $this->filterLine();
+                        } else {
+                            $this->buffer .= $text[$i];
+                        }
                     }
-                    $t = array(
-                        self::TYPE => $this->tagType,
-                        self::NAME => trim($this->buffer),
-                        self::OTAG => $this->otag,
-                        self::CTAG => $this->ctag,
-                        self::INDEX => ($this->tagType == self::T_END_SECTION) ?
-                            $this->seenTag - strlen($this->otag) :
-                            $i + strlen($this->ctag),
-                        self::TRIM_LEFT => $this->trimLeft,
-                        self::TRIM_RIGHT => $this->trimRight
-                    );
-                    if (isset($args)) {
-                        $t[self::ARGS] = $args;
+                    break;
+
+                case self::IN_TAG_TYPE:
+
+                    $i += strlen($this->otag) - 1;
+                    if (isset(self::$_tagTypes[$text[$i + 1]])) {
+                        $tag = $text[$i + 1];
+                        $this->tagType = $tag;
+                    } else {
+                        $tag = null;
+                        $this->tagType = self::T_ESCAPED;
                     }
-                    $this->tokens[] = $t;
-                    unset($t);
-                    unset($args);
-                    $this->buffer = '';
-                    $this->trimLeft = false;
-                    $this->trimRight = false;
-                    $i += strlen($this->ctag) - 1;
-                    $this->state = self::IN_TEXT;
-                    if ($this->tagType == self::T_UNESCAPED) {
-                        if ($this->ctag == '}}') {
+
+                    if ($this->tagType === self::T_DELIM_CHANGE) {
+                        $i = $this->changeDelimiters($text, $i);
+                        $this->state = self::IN_TEXT;
+                    } else {
+                        if ($tag !== null) {
                             $i++;
-                        } /* else { // I can't remember why this part is here! the ctag is always }} and
+                        }
+                        $this->state = self::IN_TAG;
+                    }
+                    $this->seenTag = $i;
+                    break;
+
+                default:
+                    if ($this->tagChange(self::T_TRIM . $this->ctag, $text, $i)) {
+                        $this->trimRight = true;
+                        continue;
+                    }
+                    if ($this->tagChange($this->ctag, $text, $i)) {
+                        // Sections (Helpers) can accept parameters
+                        // Same thing for Partials (little known fact)
+                        if (($this->tagType == self::T_SECTION)
+                            || ($this->tagType == self::T_PARTIAL)
+                            || ($this->tagType == self::T_PARTIAL_2)
+                        ) {
+                            $newBuffer = explode(' ', trim($this->buffer), 2);
+                            $args = '';
+                            if (count($newBuffer) == 2) {
+                                $args = $newBuffer[1];
+                            }
+                            $this->buffer = $newBuffer[0];
+                        }
+                        $t = array(
+                            self::TYPE => $this->tagType,
+                            self::NAME => trim($this->buffer),
+                            self::OTAG => $this->otag,
+                            self::CTAG => $this->ctag,
+                            self::INDEX => ($this->tagType == self::T_END_SECTION) ?
+                                $this->seenTag - strlen($this->otag) :
+                                $i + strlen($this->ctag),
+                            self::TRIM_LEFT => $this->trimLeft,
+                            self::TRIM_RIGHT => $this->trimRight
+                        );
+                        if (isset($args)) {
+                            $t[self::ARGS] = $args;
+                        }
+                        $this->tokens[] = $t;
+                        unset($t);
+                        unset($args);
+                        $this->buffer = '';
+                        $this->trimLeft = false;
+                        $this->trimRight = false;
+                        $i += strlen($this->ctag) - 1;
+                        $this->state = self::IN_TEXT;
+                        if ($this->tagType == self::T_UNESCAPED) {
+                            if ($this->ctag == '}}') {
+                                $i++;
+                            } /* else { // I can't remember why this part is here! the ctag is always }} and
                             // Clean up `{{{ tripleStache }}}` style tokens.
                             $lastIndex = count($this->tokens) - 1;
                             $lastName = $this->tokens[$lastIndex][self::NAME];
@@ -261,11 +260,11 @@ class Tokenizer
                                 );
                             }
                         } */
+                        }
+                    } else {
+                        $this->buffer .= $text[$i];
                     }
-                } else {
-                    $this->buffer .= $text[$i];
-                }
-                break;
+                    break;
             }
 
             $this->escaped = ($this->escaping and !$this->escaped);
@@ -299,6 +298,20 @@ class Tokenizer
     }
 
     /**
+     * Test whether it's time to change tags.
+     *
+     * @param string $tag Current tag name
+     * @param string $text Handlebars template source
+     * @param int $index Current tokenizer index
+     *
+     * @return boolean True if this is a closing section tag
+     */
+    protected function tagChange($tag, $text, $index)
+    {
+        return substr($text, $index, strlen($tag)) === $tag;
+    }
+
+    /**
      * Flush the current buffer to a token.
      *
      * @return void
@@ -312,30 +325,6 @@ class Tokenizer
             );
             $this->buffer = '';
         }
-    }
-
-    /**
-     * Test whether the current line is entirely made up of whitespace.
-     *
-     * @return boolean True if the current line is all whitespace
-     */
-    protected function lineIsWhitespace()
-    {
-        $tokensCount = count($this->tokens);
-        for ($j = $this->lineStart; $j < $tokensCount; $j++) {
-            $token = $this->tokens[$j];
-            if (isset(self::$_tagTypes[$token[self::TYPE]])) {
-                if (isset(self::$_interpolatedTags[$token[self::TYPE]])) {
-                    return false;
-                }
-            } elseif ($token[self::TYPE] == self::T_TEXT) {
-                if (preg_match('/\S/', $token[self::VALUE])) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     /**
@@ -371,10 +360,34 @@ class Tokenizer
     }
 
     /**
+     * Test whether the current line is entirely made up of whitespace.
+     *
+     * @return boolean True if the current line is all whitespace
+     */
+    protected function lineIsWhitespace()
+    {
+        $tokensCount = count($this->tokens);
+        for ($j = $this->lineStart; $j < $tokensCount; $j++) {
+            $token = $this->tokens[$j];
+            if (isset(self::$_tagTypes[$token[self::TYPE]])) {
+                if (isset(self::$_interpolatedTags[$token[self::TYPE]])) {
+                    return false;
+                }
+            } elseif ($token[self::TYPE] == self::T_TEXT) {
+                if (preg_match('/\S/', $token[self::VALUE])) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Change the current Handlebars delimiters. Set new `otag` and `ctag` values.
      *
-     * @param string $text  Mustache template source
-     * @param int    $index Current tokenizer index
+     * @param string $text Mustache template source
+     * @param int $index Current tokenizer index
      *
      * @return int New index value
      */
@@ -392,20 +405,6 @@ class Tokenizer
         $this->ctag = $ctag;
 
         return $closeIndex + strlen($close) - 1;
-    }
-
-    /**
-     * Test whether it's time to change tags.
-     *
-     * @param string $tag   Current tag name
-     * @param string $text  Handlebars template source
-     * @param int    $index Current tokenizer index
-     *
-     * @return boolean True if this is a closing section tag
-     */
-    protected function tagChange($tag, $text, $index)
-    {
-        return substr($text, $index, strlen($tag)) === $tag;
     }
 
 }

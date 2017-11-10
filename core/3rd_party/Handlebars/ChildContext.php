@@ -42,7 +42,7 @@ namespace Handlebars;
 class ChildContext extends Context
 {
     protected $parentContext = null;
-    
+
     /**
      * Sets a parent context in which
      * we will case for the ../ in get()
@@ -51,21 +51,21 @@ class ChildContext extends Context
      *
      * @return void
      */
-    public function setParent(Context $parent) 
+    public function setParent(Context $parent)
     {
         $this->parentContext = $parent;
     }
-    
+
     /**
      * Get a available from current context
      * Supported types :
      * variable , ../variable , variable.variable , variable.[variable] , .
      *
-     * @param string  $variableName variable name to get from current context
-     * @param boolean $strict       strict search? if not found then throw exception
+     * @param string $variableName variable name to get from current context
+     * @param boolean $strict strict search? if not found then throw exception
      *
      * @throws \InvalidArgumentException in strict mode and variable not found
-     * @throws \RuntimeException if supplied argument is a malformed quoted string 
+     * @throws \RuntimeException if supplied argument is a malformed quoted string
      * @throws \InvalidArgumentException if variable name is invalid
      * @return mixed
      */
@@ -73,16 +73,16 @@ class ChildContext extends Context
     {
         //if the variable name starts with a ../
         //and we have a parent
-        if (strpos($variableName, '../') === 0 
+        if (strpos($variableName, '../') === 0
             && $this->parentContext instanceof Context
         ) {
             //just remove the first ../
             $variableName = substr($variableName, 3);
-            
+
             //and let the parent context handle the rest
             return $this->parentContext->get($variableName, $strict);
         }
-        
+
         //otherwise, it's business as usual
         return parent::get($variableName, $strict);
     }

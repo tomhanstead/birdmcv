@@ -51,9 +51,9 @@ interface Cache
      * If $ttl set to -1, the cache expires immediately
      * If $ttl set to 0 (default), cache is never purged
      *
-     * @param string $name  cache id
-     * @param mixed  $value data to store
-     * @param int    $ttl   time to live in seconds
+     * @param string $name cache id
+     * @param mixed $value data to store
+     * @param int $ttl time to live in seconds
      *
      * @return void
      */

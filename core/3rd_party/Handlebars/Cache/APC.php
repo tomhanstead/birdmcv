@@ -18,6 +18,7 @@
  */
 
 namespace Handlebars\Cache;
+
 use Handlebars\Cache;
 
 /**
@@ -31,7 +32,6 @@ use Handlebars\Cache;
  * @version   Release: @package_version@
  * @link      http://xamin.ir
  */
-
 class APC implements Cache
 {
 
@@ -45,7 +45,7 @@ class APC implements Cache
      *
      * @param string|null $prefix optional key prefix, defaults to null
      */
-    public function __construct( $prefix = null )
+    public function __construct($prefix = null)
     {
         $this->_prefix = (string)$prefix;
     }
@@ -68,13 +68,25 @@ class APC implements Cache
     }
 
     /**
+     * Gets the full cache key for a given cache item's
+     *
+     * @param string $name Name of the cache item
+     *
+     * @return string full cache key of cached item
+     */
+    private function _getKey($name)
+    {
+        return $this->_prefix . ':' . $name;
+    }
+
+    /**
      * Set a cache with $ttl, if present
      * If $ttl set to -1, the cache expires immediately
      * If $ttl set to 0 (default), cache is never purged
      *
-     * @param string $name  cache id
-     * @param mixed  $value data to store
-     * @param int    $ttl   time to live in seconds
+     * @param string $name cache id
+     * @param mixed $value data to store
+     * @param int $ttl time to live in seconds
      *
      * @return void
      */
@@ -93,18 +105,6 @@ class APC implements Cache
     public function remove($name)
     {
         apc_delete($this->_getKey($name));
-    }
-
-    /**
-     * Gets the full cache key for a given cache item's
-     *
-     * @param string $name Name of the cache item
-     *
-     * @return string full cache key of cached item
-     */
-    private function _getKey($name)
-    {
-        return $this->_prefix . ':' . $name;
     }
 
 }

@@ -38,7 +38,6 @@ use Handlebars\StringWrapper;
  * @version   Release: @package_version@
  * @link      http://xamin.ir *
  */
-
 class FilesystemLoader implements Loader
 {
     protected $baseDir;
@@ -57,7 +56,7 @@ class FilesystemLoader implements Loader
      *     );
      *
      * @param string|array $baseDirs A path contain template files or array of paths
-     * @param array        $options  Array of Loader options (default: array())
+     * @param array $options Array of Loader options (default: array())
      *
      * @throws \RuntimeException if $baseDir does not exist.
      */
@@ -65,26 +64,6 @@ class FilesystemLoader implements Loader
     {
         $this->setBaseDir($baseDirs);
         $this->handleOptions($options);
-    }
-
-    /**
-     * Load a Template by name.
-     *
-     *     $loader = new FilesystemLoader(dirname(__FILE__).'/views');
-     *     // loads "./views/admin/dashboard.handlebars";
-     *     $loader->load('admin/dashboard');
-     *
-     * @param string $name template name
-     *
-     * @return StringWrapper Handlebars Template source
-     */
-    public function load($name)
-    {
-        if (!isset($this->_templates[$name])) {
-            $this->_templates[$name] = $this->loadFile($name);
-        }
-
-        return new StringWrapper($this->_templates[$name]);
     }
 
     /**
@@ -144,6 +123,26 @@ class FilesystemLoader implements Loader
         if (isset($options['prefix'])) {
             $this->_prefix = $options['prefix'];
         }
+    }
+
+    /**
+     * Load a Template by name.
+     *
+     *     $loader = new FilesystemLoader(dirname(__FILE__).'/views');
+     *     // loads "./views/admin/dashboard.handlebars";
+     *     $loader->load('admin/dashboard');
+     *
+     * @param string $name template name
+     *
+     * @return StringWrapper Handlebars Template source
+     */
+    public function load($name)
+    {
+        if (!isset($this->_templates[$name])) {
+            $this->_templates[$name] = $this->loadFile($name);
+        }
+
+        return new StringWrapper($this->_templates[$name]);
     }
 
     /**

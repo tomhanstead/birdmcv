@@ -73,7 +73,7 @@ class Context
     protected $key = array();
 
     /**
-     * Special variables stack for sections. 
+     * Special variables stack for sections.
      *
      * @var array Each stack element can
      * contain elements with "@index", "@key", "@first" and "@last" keys.
@@ -90,18 +90,6 @@ class Context
         if ($context !== null) {
             $this->stack = array($context);
         }
-    }
-
-    /**
-     * Push a new Context frame onto the stack.
-     *
-     * @param mixed $value Object or array to use for context
-     *
-     * @return void
-     */
-    public function push($value)
-    {
-        array_push($this->stack, $value);
     }
 
     /**
@@ -151,18 +139,6 @@ class Context
     }
 
     /**
-     * Get the last special variables set from the stack.
-     *
-     * @return array Associative array of special variables.
-     *
-     * @see \Handlebars\Context::$specialVariables
-     */
-    public function lastSpecialVariables()
-    {
-        return end($this->specialVariables);
-    }
-
-    /**
      * Change the current context to one of current context members
      *
      * @param string $variableName name of variable or a callable on current context
@@ -182,11 +158,11 @@ class Context
      * Supported types :
      * variable , ../variable , variable.variable , variable.[variable] , .
      *
-     * @param string  $variableName variable name to get from current context
-     * @param boolean $strict       strict search? if not found then throw exception
+     * @param string $variableName variable name to get from current context
+     * @param boolean $strict strict search? if not found then throw exception
      *
      * @throws \InvalidArgumentException in strict mode and variable not found
-     * @throws \RuntimeException if supplied argument is a malformed quoted string 
+     * @throws \RuntimeException if supplied argument is a malformed quoted string
      * @throws \InvalidArgumentException if variable name is invalid
      * @return mixed
      */
@@ -215,7 +191,7 @@ class Context
         }
         if (substr($variableName, 0, 6) == '@root.') {
             $variableName = trim(substr($variableName, 6));
-            $level = count($this->stack)-1;
+            $level = count($this->stack) - 1;
         }
         end($this->stack);
         while ($level) {
@@ -263,11 +239,73 @@ class Context
     }
 
     /**
+     * Get the last special variables set from the stack.
+     *
+     * @return array Associative array of special variables.
+     *
+     * @see \Handlebars\Context::$specialVariables
+     */
+    public function lastSpecialVariables()
+    {
+        return end($this->specialVariables);
+    }
+
+    /**
+     * Splits variable name to chunks.
+     *
+     * @param string $variableName Fully qualified name of a variable.
+     *
+     * @throws \InvalidArgumentException if variable name is invalid.
+     * @return array
+     */
+    private function _splitVariableName($variableName)
+    {
+        $bad_chars = preg_quote(self::NOT_VALID_NAME_CHARS, '/');
+        $bad_seg_chars = preg_quote(self::NOT_VALID_SEGMENT_NAME_CHARS, '/');
+
+        $name_pattern = "(?:[^"
+            . $bad_chars
+            . "\s]+)|(?:\[[^"
+            . $bad_seg_chars
+            . "]+\])";
+
+        $check_pattern = "/^(("
+            . $name_pattern
+            . ")\.)*("
+            . $name_pattern
+            . ")\.?$/";
+
+        $get_pattern = "/(?:" . $name_pattern . ")/";
+
+        if (!preg_match($check_pattern, $variableName)) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'Variable name is invalid: "%s"',
+                    $variableName
+                )
+            );
+        }
+
+        preg_match_all($get_pattern, $variableName, $matches);
+
+        $chunks = array();
+        foreach ($matches[0] as $chunk) {
+            // Remove wrapper braces if needed
+            if ($chunk[0] == '[') {
+                $chunk = substr($chunk, 1, -1);
+            }
+            $chunks[] = $chunk;
+        }
+
+        return $chunks;
+    }
+
+    /**
      * Check if $variable->$inside is available
      *
-     * @param mixed   $variable variable to check
-     * @param string  $inside   property/method to check
-     * @param boolean $strict   strict search? if not found then throw exception
+     * @param mixed $variable variable to check
+     * @param string $inside property/method to check
+     * @param boolean $strict strict search? if not found then throw exception
      *
      * @throws \InvalidArgumentException in strict mode and variable not found
      * @return boolean true if exist
@@ -304,53 +342,15 @@ class Context
     }
 
     /**
-     * Splits variable name to chunks.
+     * Push a new Context frame onto the stack.
      *
-     * @param string $variableName Fully qualified name of a variable.
+     * @param mixed $value Object or array to use for context
      *
-     * @throws \InvalidArgumentException if variable name is invalid.
-     * @return array
+     * @return void
      */
-    private function _splitVariableName($variableName)
+    public function push($value)
     {
-        $bad_chars = preg_quote(self::NOT_VALID_NAME_CHARS, '/');
-        $bad_seg_chars = preg_quote(self::NOT_VALID_SEGMENT_NAME_CHARS, '/');
-
-        $name_pattern = "(?:[^" 
-            . $bad_chars 
-            . "\s]+)|(?:\[[^" 
-            . $bad_seg_chars 
-            . "]+\])";
-        
-        $check_pattern = "/^((" 
-            . $name_pattern 
-            . ")\.)*(" 
-            . $name_pattern  
-            . ")\.?$/";
-        
-        $get_pattern = "/(?:" . $name_pattern . ")/";
-
-        if (!preg_match($check_pattern, $variableName)) {
-            throw new \InvalidArgumentException(
-                sprintf(
-                    'Variable name is invalid: "%s"',
-                    $variableName
-                )
-            );
-        }
-
-        preg_match_all($get_pattern, $variableName, $matches);
-
-        $chunks = array();
-        foreach ($matches[0] as $chunk) {
-            // Remove wrapper braces if needed
-            if ($chunk[0] == '[') {
-                $chunk = substr($chunk, 1, -1);
-            }
-            $chunks[] = $chunk;
-        }
-
-        return $chunks;
+        array_push($this->stack, $value);
     }
 
 }

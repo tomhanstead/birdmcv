@@ -47,7 +47,7 @@ class Helpers
     /**
      * Create new helper container class
      *
-     * @param array      $helpers  array of name=>$value helpers
+     * @param array $helpers array of name=>$value helpers
      * @param array|bool $defaults add defaults helper
      *          (if, unless, each,with, bindAttr)
      *
@@ -91,15 +91,15 @@ class Helpers
     /**
      * Add a new helper to helpers
      *
-     * @param string $name   helper name
-     * @param mixed  $helper a callable or Helper implementation as a helper
+     * @param string $name helper name
+     * @param mixed $helper a callable or Helper implementation as a helper
      *
      * @throws \InvalidArgumentException if $helper is not a callable
      * @return void
      */
     public function add($name, $helper)
     {
-        if (!is_callable($helper) && ! $helper instanceof Helper) {
+        if (!is_callable($helper) && !$helper instanceof Helper) {
             throw new \InvalidArgumentException(
                 sprintf(
                     "%s Helper is not a callable or doesn't implement the Helper interface.",
@@ -126,13 +126,24 @@ class Helpers
     }
 
     /**
+     * Returns all helpers from the collection.
+     *
+     * @return array Associative array of helpers which keys are helpers names
+     * and the values are the helpers.
+     */
+    public function getAll()
+    {
+        return $this->helpers;
+    }
+
+    /**
      * Calls a helper, whether it be a Closure or Helper instance
      *
-     * @param string               $name     The name of the helper
+     * @param string $name The name of the helper
      * @param \Handlebars\Template $template The template instance
-     * @param \Handlebars\Context  $context  The current context
-     * @param array                $args     The arguments passed the the helper
-     * @param string               $source   The source
+     * @param \Handlebars\Context $context The current context
+     * @param array $args The arguments passed the the helper
+     * @param string $source The source
      *
      * @throws \InvalidArgumentException
      * @return mixed The helper return value
@@ -156,10 +167,10 @@ class Helpers
         }
 
         return call_user_func(
-            $this->helpers[$name], 
-            $template, 
-            $context, 
-            $parsedArgs, 
+            $this->helpers[$name],
+            $template,
+            $context,
+            $parsedArgs,
             $source
         );
     }
@@ -199,6 +210,19 @@ class Helpers
     }
 
     /**
+     * Add a new helper to helpers __magic__ method :)
+     *
+     * @param string $name helper name
+     * @param callable $helper a function as a helper
+     *
+     * @return void
+     */
+    public function __set($name, $helper)
+    {
+        $this->add($name, $helper);
+    }
+
+    /**
      * Check if $name helper is available __magic__ method :)
      *
      * @param string $name helper name
@@ -209,19 +233,6 @@ class Helpers
     public function __isset($name)
     {
         return $this->has($name);
-    }
-
-    /**
-     * Add a new helper to helpers __magic__ method :)
-     *
-     * @param string   $name   helper name
-     * @param callable $helper a function as a helper
-     *
-     * @return void
-     */
-    public function __set($name, $helper)
-    {
-        $this->add($name, $helper);
     }
 
     /**
@@ -278,16 +289,5 @@ class Helpers
     public function isEmpty()
     {
         return empty($this->helpers);
-    }
-
-    /**
-     * Returns all helpers from the collection.
-     *
-     * @return array Associative array of helpers which keys are helpers names
-     * and the values are the helpers.
-     */
-    public function getAll()
-    {
-        return $this->helpers;
     }
 }

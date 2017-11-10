@@ -64,38 +64,6 @@ class Arguments
     }
 
     /**
-     * Returns string representation of the arguments list.
-     *
-     * This method is here mostly for backward compatibility reasons.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->originalString;
-    }
-
-    /**
-     * Returns a list of named arguments.
-     *
-     * @return array
-     */
-    public function getNamedArguments()
-    {
-        return $this->namedArgs;
-    }
-
-    /**
-     * Returns a list of positional arguments.
-     *
-     * @return array
-     */
-    public function getPositionalArguments()
-    {
-        return $this->positionalArgs;
-    }
-
-    /**
      * Breaks an argument string into arguments and stores them inside the
      * object.
      *
@@ -110,7 +78,7 @@ class Arguments
         $bad_seg_chars = preg_quote(Context::NOT_VALID_SEGMENT_NAME_CHARS, '#');
 
         $name_chunk = '(?:[^' . $bad_chars . '\s]+)|(?:\[[^' . $bad_seg_chars . ']+\])';
-        $variable_name = '(?:\.\.\/)*(?:(?:' . $name_chunk . ')[\.\/])*(?:' . $name_chunk  . ')\.?';
+        $variable_name = '(?:\.\.\/)*(?:(?:' . $name_chunk . ')[\.\/])*(?:' . $name_chunk . ')\.?';
         $special_variable_name = '@[a-z]+';
         $escaped_value = '(?:(?<!\\\\)".*?(?<!\\\\)"|(?<!\\\\)\'.*?(?<!\\\\)\')';
         $argument_name = $name_chunk;
@@ -153,6 +121,25 @@ class Arguments
     }
 
     /**
+     * Prepares argument's name.
+     *
+     * Remove sections braces if needed.
+     *
+     * @param strign $name Argument's name
+     *
+     * @return string
+     */
+    protected function prepareArgumentName($name)
+    {
+        // Check if argument's name is a segment
+        if ($name[0] == '[') {
+            $name = substr($name, 1, -1);
+        }
+
+        return $name;
+    }
+
+    /**
      * Prepares argument's value to add to arguments list.
      *
      * The method unescapes value and wrap it into \Handlebars\StringWrapper
@@ -181,21 +168,34 @@ class Arguments
     }
 
     /**
-     * Prepares argument's name.
+     * Returns string representation of the arguments list.
      *
-     * Remove sections braces if needed.
-     *
-     * @param strign $name Argument's name
+     * This method is here mostly for backward compatibility reasons.
      *
      * @return string
      */
-    protected function prepareArgumentName($name)
+    public function __toString()
     {
-        // Check if argument's name is a segment
-        if ($name[0] == '[') {
-            $name = substr($name, 1, -1);
-        }
+        return $this->originalString;
+    }
 
-        return $name;
+    /**
+     * Returns a list of named arguments.
+     *
+     * @return array
+     */
+    public function getNamedArguments()
+    {
+        return $this->namedArgs;
+    }
+
+    /**
+     * Returns a list of positional arguments.
+     *
+     * @return array
+     */
+    public function getPositionalArguments()
+    {
+        return $this->positionalArgs;
     }
 }

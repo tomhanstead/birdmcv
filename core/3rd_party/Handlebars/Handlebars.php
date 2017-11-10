@@ -20,8 +20,9 @@
  */
 
 namespace Handlebars;
-use Handlebars\Loader\StringLoader;
+
 use Handlebars\Cache\Dummy;
+use Handlebars\Loader\StringLoader;
 
 /**
  * Handlebars template engine, based on mustache.
@@ -34,87 +35,60 @@ use Handlebars\Cache\Dummy;
  * @version   Release: @package_version@
  * @link      http://xamin.ir
  */
-
 class Handlebars
 {
-    private static $_instance = false;
     const VERSION = '1.1.0';
-
-    /**
-     * Factory method
-     *
-     * @param array $options see __construct's options parameter
-     *
-     * @return Handlebars
-     */
-    public static function factory($options = array())
-    {
-        if (self::$_instance === false) {
-            self::$_instance = new Handlebars($options);
-        }
-
-        return self::$_instance;
-    }
-
+    private static $_instance = false;
     /**
      * Current tokenizer instance
      *
      * @var Tokenizer
      */
     private $_tokenizer;
-
     /**
      * Current parser instance
      *
      * @var Parser
      */
     private $_parser;
-
     /**
      * Current helper list
      *
      * @var Helpers
      */
     private $_helpers;
-
     /**
      * Current loader instance
      *
      * @var Loader
      */
     private $_loader;
-
     /**
      * Current partial loader instance
      *
      * @var Loader
      */
     private $_partialsLoader;
-
     /**
      * Current cache instance
      *
      * @var Cache
      */
     private $_cache;
-
     /**
      * @var int time to live parameter in seconds for the cache usage
      *          default set to 0 which means that entries stay in cache
      *          forever and are never purged
      */
     private $_ttl = 0;
-
     /**
      * @var string the class to use for the template
      */
     private $_templateClass = 'Handlebars\\Template';
-
     /**
      * @var callable escape function to use
      */
     private $_escape = 'htmlspecialchars';
-
     /**
      * Parameters for the escpae method above
      *
@@ -124,7 +98,6 @@ class Handlebars
         ENT_COMPAT,
         'UTF-8'
     );
-
     private $_aliases = array();
 
     /**
@@ -192,6 +165,42 @@ class Handlebars
         }
     }
 
+    /**
+     * Sets the class to use for the template object
+     *
+     * @param string $class the class name
+     *
+     * @return void
+     */
+    public function setTemplateClass($class)
+    {
+        if (!is_a($class, 'Handlebars\\Template', true)) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'Custom template class "%s" must extend Template',
+                    $class
+                )
+            );
+        }
+
+        $this->_templateClass = $class;
+    }
+
+    /**
+     * Factory method
+     *
+     * @param array $options see __construct's options parameter
+     *
+     * @return Handlebars
+     */
+    public static function factory($options = array())
+    {
+        if (self::$_instance === false) {
+            self::$_instance = new Handlebars($options);
+        }
+
+        return self::$_instance;
+    }
 
     /**
      * Shortcut 'render' invocation.
@@ -199,7 +208,7 @@ class Handlebars
      * Equivalent to calling `$handlebars->loadTemplate($template)->render($data);`
      *
      * @param string $template template name
-     * @param mixed  $data     data to use as context
+     * @param mixed $data data to use as context
      *
      * @return string Rendered template
      * @see    Handlebars::loadTemplate
@@ -211,194 +220,18 @@ class Handlebars
     }
 
     /**
-     * Set helpers for current enfine
+     * Load a template by name with current template loader
      *
-     * @param Helpers $helpers handlebars helper
+     * @param string $name template name
      *
-     * @return void
+     * @return Template
      */
-    public function setHelpers(Helpers $helpers)
+    public function loadTemplate($name)
     {
-        $this->_helpers = $helpers;
-    }
+        $source = $this->getLoader()->load($name);
+        $tree = $this->_tokenize($source);
 
-    /**
-     * Get helpers, or create new one if ther is no helper
-     *
-     * @return Helpers
-     */
-    public function getHelpers()
-    {
-        if (!isset($this->_helpers)) {
-            $this->_helpers = new Helpers();
-        }
-
-        return $this->_helpers;
-    }
-
-    /**
-     * Add a new helper.
-     *
-     * @param string $name   helper name
-     * @param mixed  $helper helper callable
-     *
-     * @return void
-     */
-    public function addHelper($name, $helper)
-    {
-        $this->getHelpers()->add($name, $helper);
-    }
-
-    /**
-     * Get a helper by name.
-     *
-     * @param string $name helper name
-     *
-     * @return callable Helper
-     */
-    public function getHelper($name)
-    {
-        return $this->getHelpers()->__get($name);
-    }
-
-    /**
-     * Check whether this instance has a helper.
-     *
-     * @param string $name helper name
-     *
-     * @return boolean True if the helper is present
-     */
-    public function hasHelper($name)
-    {
-        return $this->getHelpers()->has($name);
-    }
-    
-     /**
-     * Add a new helper.
-     *
-     * @param string $name   helper name
-     * @param mixed  $helper helper callable
-     *
-     * @return void
-     */
-    public function registerHelper($name, $helper)
-    {    
-        $callback = function ($template, $context, $arg) use ($helper) {
-            $args = $template->parseArguments($arg);
-            $named = $template->parseNamedArguments($arg);
-            
-            foreach ($args as $i => $arg) {
-                //if it's literally string
-                if ($arg instanceof BaseString) {
-                    //we have no problems here
-                    $args[$i] = (string) $arg;
-                    continue;
-                }
-                
-                //not sure what to do if it's not a string or StringWrapper
-                if (!is_string($arg)) {
-                    continue;
-                }
-                
-                //it's a variable and we need to figure out the value of it
-                $args[$i] = $context->get($arg);
-            }
-            
-            //push the options    
-            $args[] = array(
-                //special fields
-                'data' => array(
-                    'index' => $context->get('@index'),
-                    'key' => $context->get('@key'),
-                    'first' => $context->get('@first'),
-                    'last' => $context->get('@last')),
-                // Named arguments
-                'hash' => $named,
-                // A renderer for block helper
-                'fn' => function ($inContext = null) use ($context, $template) {
-                    $defined = !!$inContext;
-                    
-                    if (!$defined) {
-                        $inContext = $context;
-                        $inContext->push($inContext->last());
-                    } else if (!$inContext instanceof Context) {
-                        $inContext = new ChildContext($inContext);
-                        $inContext->setParent($context);
-                    }
-                    
-                    $template->setStopToken('else');
-                    $buffer = $template->render($inContext);
-                    $template->setStopToken(false);
-                    //what if it's a loop ?
-                    $template->rewind();
-                    //What's the point of this again?
-                    //I mean in this context (literally)
-                    //$template->discard($inContext);
-                    
-                    if ($defined) {
-                        $inContext->pop();
-                    }
-                    
-                    return $buffer;
-                },
-                
-                // A render for the else block
-                'inverse' => function ($inContext = null) use ($context, $template) {
-                    $defined = !!$inContext;
-                    
-                    if (!$defined) {
-                        $inContext = $context;
-                        $inContext->push($inContext->last());
-                    } else if (!$inContext instanceof Context) {
-                        $inContext = new ChildContext($inContext);
-                        $inContext->setParent($context);
-                    }
-                    
-                    $template->setStopToken('else');
-                    $template->discard($inContext);
-                    $template->setStopToken(false);
-                    $buffer = $template->render($inContext);
-                    
-                    if ($defined) {
-                        $inContext->pop();
-                    }
-                    
-                    return $buffer;
-                },
-                
-                // The current context.
-                'context' => $context,
-                // The current template
-                'template' => $template);
-            
-            return call_user_func_array($helper, $args);
-        };
-    
-        $this->addHelper($name, $callback);
-    }
-
-    /**
-     * Remove a helper by name.
-     *
-     * @param string $name helper name
-     *
-     * @return void
-     */
-    public function removeHelper($name)
-    {
-        $this->getHelpers()->remove($name);
-    }
-
-    /**
-     * Set current loader
-     *
-     * @param Loader $loader handlebars loader
-     *
-     * @return void
-     */
-    public function setLoader(Loader $loader)
-    {
-        $this->_loader = $loader;
+        return new $this->_templateClass($this, $tree, $source);
     }
 
     /**
@@ -416,41 +249,35 @@ class Handlebars
     }
 
     /**
-     * Set current partials loader
+     * Set current loader
      *
      * @param Loader $loader handlebars loader
      *
      * @return void
      */
-    public function setPartialsLoader(Loader $loader)
+    public function setLoader(Loader $loader)
     {
-        $this->_partialsLoader = $loader;
+        $this->_loader = $loader;
     }
 
     /**
-     * Get current partials loader
+     * Try to tokenize source, or get them from cache if available
      *
-     * @return Loader
+     * @param string $source handlebars source code
+     *
+     * @return array handlebars parsed data into array
      */
-    public function getPartialsLoader()
+    private function _tokenize($source)
     {
-        if (!isset($this->_partialsLoader)) {
-            $this->_partialsLoader = new StringLoader();
+        $hash = md5(sprintf('version: %s, data : %s', self::VERSION, $source));
+        $tree = $this->getCache()->get($hash);
+        if ($tree === false) {
+            $tokens = $this->getTokenizer()->scan($source);
+            $tree = $this->getParser()->parse($tokens);
+            $this->getCache()->set($hash, $tree, $this->_ttl);
         }
 
-        return $this->_partialsLoader;
-    }
-
-    /**
-     * Set cache  for current engine
-     *
-     * @param Cache $cache handlebars cache
-     *
-     * @return void
-     */
-    public function setCache(Cache $cache)
-    {
-        $this->_cache = $cache;
+        return $tree;
     }
 
     /**
@@ -468,15 +295,252 @@ class Handlebars
     }
 
     /**
-     * Set time to live for the used cache
+     * Set cache  for current engine
      *
-     * @param int $ttl time to live in seconds
+     * @param Cache $cache handlebars cache
      *
      * @return void
      */
-    public function setTtl($ttl)
+    public function setCache(Cache $cache)
     {
-        $this->_ttl = $ttl;
+        $this->_cache = $cache;
+    }
+
+    /**
+     * Get the current Handlebars Tokenizer instance.
+     *
+     * If no Tokenizer instance has been explicitly specified, this method will
+     * instantiate and return a new one.
+     *
+     * @return Tokenizer
+     */
+    public function getTokenizer()
+    {
+        if (!isset($this->_tokenizer)) {
+            $this->_tokenizer = new Tokenizer();
+        }
+
+        return $this->_tokenizer;
+    }
+
+    /**
+     * Set the Handlebars Tokenizer instance.
+     *
+     * @param Tokenizer $tokenizer tokenizer
+     *
+     * @return void
+     */
+    public function setTokenizer(Tokenizer $tokenizer)
+    {
+        $this->_tokenizer = $tokenizer;
+    }
+
+    /**
+     * Get the current Handlebars Parser instance.
+     *
+     * If no Parser instance has been explicitly specified, this method will
+     * instantiate and return a new one.
+     *
+     * @return Parser
+     */
+    public function getParser()
+    {
+        if (!isset($this->_parser)) {
+            $this->_parser = new Parser();
+        }
+
+        return $this->_parser;
+    }
+
+    /**
+     * Set the Handlebars Parser instance.
+     *
+     * @param Parser $parser parser object
+     *
+     * @return void
+     */
+    public function setParser(Parser $parser)
+    {
+        $this->_parser = $parser;
+    }
+
+    /**
+     * Get a helper by name.
+     *
+     * @param string $name helper name
+     *
+     * @return callable Helper
+     */
+    public function getHelper($name)
+    {
+        return $this->getHelpers()->__get($name);
+    }
+
+    /**
+     * Get helpers, or create new one if ther is no helper
+     *
+     * @return Helpers
+     */
+    public function getHelpers()
+    {
+        if (!isset($this->_helpers)) {
+            $this->_helpers = new Helpers();
+        }
+
+        return $this->_helpers;
+    }
+
+    /**
+     * Set helpers for current enfine
+     *
+     * @param Helpers $helpers handlebars helper
+     *
+     * @return void
+     */
+    public function setHelpers(Helpers $helpers)
+    {
+        $this->_helpers = $helpers;
+    }
+
+    /**
+     * Check whether this instance has a helper.
+     *
+     * @param string $name helper name
+     *
+     * @return boolean True if the helper is present
+     */
+    public function hasHelper($name)
+    {
+        return $this->getHelpers()->has($name);
+    }
+
+    /**
+     * Add a new helper.
+     *
+     * @param string $name helper name
+     * @param mixed $helper helper callable
+     *
+     * @return void
+     */
+    public function registerHelper($name, $helper)
+    {
+        $callback = function ($template, $context, $arg) use ($helper) {
+            $args = $template->parseArguments($arg);
+            $named = $template->parseNamedArguments($arg);
+
+            foreach ($args as $i => $arg) {
+                //if it's literally string
+                if ($arg instanceof BaseString) {
+                    //we have no problems here
+                    $args[$i] = (string)$arg;
+                    continue;
+                }
+
+                //not sure what to do if it's not a string or StringWrapper
+                if (!is_string($arg)) {
+                    continue;
+                }
+
+                //it's a variable and we need to figure out the value of it
+                $args[$i] = $context->get($arg);
+            }
+
+            //push the options    
+            $args[] = array(
+                //special fields
+                'data' => array(
+                    'index' => $context->get('@index'),
+                    'key' => $context->get('@key'),
+                    'first' => $context->get('@first'),
+                    'last' => $context->get('@last')),
+                // Named arguments
+                'hash' => $named,
+                // A renderer for block helper
+                'fn' => function ($inContext = null) use ($context, $template) {
+                    $defined = !!$inContext;
+
+                    if (!$defined) {
+                        $inContext = $context;
+                        $inContext->push($inContext->last());
+                    } else if (!$inContext instanceof Context) {
+                        $inContext = new ChildContext($inContext);
+                        $inContext->setParent($context);
+                    }
+
+                    $template->setStopToken('else');
+                    $buffer = $template->render($inContext);
+                    $template->setStopToken(false);
+                    //what if it's a loop ?
+                    $template->rewind();
+                    //What's the point of this again?
+                    //I mean in this context (literally)
+                    //$template->discard($inContext);
+
+                    if ($defined) {
+                        $inContext->pop();
+                    }
+
+                    return $buffer;
+                },
+
+                // A render for the else block
+                'inverse' => function ($inContext = null) use ($context, $template) {
+                    $defined = !!$inContext;
+
+                    if (!$defined) {
+                        $inContext = $context;
+                        $inContext->push($inContext->last());
+                    } else if (!$inContext instanceof Context) {
+                        $inContext = new ChildContext($inContext);
+                        $inContext->setParent($context);
+                    }
+
+                    $template->setStopToken('else');
+                    $template->discard($inContext);
+                    $template->setStopToken(false);
+                    $buffer = $template->render($inContext);
+
+                    if ($defined) {
+                        $inContext->pop();
+                    }
+
+                    return $buffer;
+                },
+
+                // The current context.
+                'context' => $context,
+                // The current template
+                'template' => $template);
+
+            return call_user_func_array($helper, $args);
+        };
+
+        $this->addHelper($name, $callback);
+    }
+
+    /**
+     * Add a new helper.
+     *
+     * @param string $name helper name
+     * @param mixed $helper helper callable
+     *
+     * @return void
+     */
+    public function addHelper($name, $helper)
+    {
+        $this->getHelpers()->add($name, $helper);
+    }
+
+    /**
+     * Remove a helper by name.
+     *
+     * @param string $name helper name
+     *
+     * @return void
+     */
+    public function removeHelper($name)
+    {
+        $this->getHelpers()->remove($name);
     }
 
     /**
@@ -487,6 +551,18 @@ class Handlebars
     public function getTtl()
     {
         return $this->_ttl;
+    }
+
+    /**
+     * Set time to live for the used cache
+     *
+     * @param int $ttl time to live in seconds
+     *
+     * @return void
+     */
+    public function setTtl($ttl)
+    {
+        $this->_ttl = $ttl;
     }
 
     /**
@@ -542,101 +618,6 @@ class Handlebars
         $this->_escapeArgs = $escapeArgs;
     }
 
-
-    /**
-     * Set the Handlebars Tokenizer instance.
-     *
-     * @param Tokenizer $tokenizer tokenizer
-     *
-     * @return void
-     */
-    public function setTokenizer(Tokenizer $tokenizer)
-    {
-        $this->_tokenizer = $tokenizer;
-    }
-
-    /**
-     * Get the current Handlebars Tokenizer instance.
-     *
-     * If no Tokenizer instance has been explicitly specified, this method will
-     * instantiate and return a new one.
-     *
-     * @return Tokenizer
-     */
-    public function getTokenizer()
-    {
-        if (!isset($this->_tokenizer)) {
-            $this->_tokenizer = new Tokenizer();
-        }
-
-        return $this->_tokenizer;
-    }
-
-    /**
-     * Set the Handlebars Parser instance.
-     *
-     * @param Parser $parser parser object
-     *
-     * @return void
-     */
-    public function setParser(Parser $parser)
-    {
-        $this->_parser = $parser;
-    }
-
-    /**
-     * Get the current Handlebars Parser instance.
-     *
-     * If no Parser instance has been explicitly specified, this method will
-     * instantiate and return a new one.
-     *
-     * @return Parser
-     */
-    public function getParser()
-    {
-        if (!isset($this->_parser)) {
-            $this->_parser = new Parser();
-        }
-
-        return $this->_parser;
-    }
-
-    /**
-     * Sets the class to use for the template object
-     *
-     * @param string $class the class name
-     *
-     * @return void
-     */
-    public function setTemplateClass($class)
-    {
-        if (!is_a($class, 'Handlebars\\Template', true)) {
-            throw new \InvalidArgumentException(
-                sprintf(
-                    'Custom template class "%s" must extend Template',
-                    $class
-                )
-            );
-        }
-
-        $this->_templateClass = $class;
-    }
-
-    /**
-     * Load a template by name with current template loader
-     *
-     * @param string $name template name
-     *
-     * @return Template
-     */
-    public function loadTemplate($name)
-    {
-        $source = $this->getLoader()->load($name);
-        $tree = $this->_tokenize($source);
-
-        return new $this->_templateClass($this, $tree, $source);
-    }
-
     /**
      * Load a partial by name with current partial loader
      *
@@ -656,9 +637,35 @@ class Handlebars
     }
 
     /**
+     * Get current partials loader
+     *
+     * @return Loader
+     */
+    public function getPartialsLoader()
+    {
+        if (!isset($this->_partialsLoader)) {
+            $this->_partialsLoader = new StringLoader();
+        }
+
+        return $this->_partialsLoader;
+    }
+
+    /**
+     * Set current partials loader
+     *
+     * @param Loader $loader handlebars loader
+     *
+     * @return void
+     */
+    public function setPartialsLoader(Loader $loader)
+    {
+        $this->_partialsLoader = $loader;
+    }
+
+    /**
      * Register partial alias
      *
-     * @param string $alias   Partial alias
+     * @param string $alias Partial alias
      * @param string $content The real value
      *
      * @return void
@@ -694,26 +701,6 @@ class Handlebars
         $tree = $this->_tokenize($source);
 
         return new $this->_templateClass($this, $tree, $source);
-    }
-
-    /**
-     * Try to tokenize source, or get them from cache if available
-     *
-     * @param string $source handlebars source code
-     *
-     * @return array handlebars parsed data into array
-     */
-    private function _tokenize($source)
-    {
-        $hash = md5(sprintf('version: %s, data : %s', self::VERSION, $source));
-        $tree = $this->getCache()->get($hash);
-        if ($tree === false) {
-            $tokens = $this->getTokenizer()->scan($source);
-            $tree = $this->getParser()->parse($tokens);
-            $this->getCache()->set($hash, $tree, $this->_ttl);
-        }
-
-        return $tree;
     }
 
 }

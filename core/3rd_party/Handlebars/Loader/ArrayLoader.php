@@ -46,7 +46,7 @@ class ArrayLoader implements Loader
     /**
      * Add a template to list
      *
-     * @param string $name     template name
+     * @param string $name template name
      * @param string $template the template
      *
      * @return void
