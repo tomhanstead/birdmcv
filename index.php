@@ -6,8 +6,8 @@
         "version" => "0.0.1",
         "domain" => "birdmvc.dev",
         "cache_enabled" => false,
-        "handlebars_enabled" => true,
-        "handlebars_browser_handled" => true,
+        "handlebars_enabled" => false,
+        "handlebars_browser_handled" => false,
         "path" => array(
             "app" => "app/",
             "cache" => "caches/",
